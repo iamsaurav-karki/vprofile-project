@@ -68,6 +68,7 @@ pipeline {
 
         stage('Quality Gate'){
             steps {
+		    echo "Quality checked"
                 }
             }
         }
