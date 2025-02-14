@@ -98,7 +98,7 @@ pipeline {
         stage('Docker Build app image'){
             steps {
                 script {
-                    dockerImage = docker.build(appRegistry + ":$Build_Number", "./Docker-files/app/multistage/") 
+                    dockerImage = sudo docker.build(appRegistry + ":$Build_Number", "./Docker-files/app/multistage/") 
                 }
             }
         } 
