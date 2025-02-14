@@ -22,6 +22,9 @@ pipeline {
         NEXUS_LOGIN = 'nexuslogin'
         SONARSERVER = 'sonarserver'
         SONARSCANNER = 'sonarscanner'
+        registryCredentials = 'ecr:us-east-1:awscreds'
+        appRegistry = '195275651197.dkr.ecr.us-east-1.amazonaws.com/vprofileappimg'
+        vprofileRegistry = "https://195275651197.dkr.ecr.us-east-1.amazonaws.com"
     }
 
     stages {
@@ -91,8 +94,25 @@ pipeline {
                   ] 
                 )
             }
-        }    
-}
+        }
+        stage('Docker Build app image'){
+            steps {
+                script {
+                    dockerImage = docker.build(appRegistry + ":$Build_Number", "./Docker-files/app/multistage/") 
+                }
+            }
+        } 
+        stage('Push Docker Image to ECR'){
+            steps {
+                script {
+                    docker.withRegistry(vprofileRegistry, registryCredentials) {
+                        dockerImage.push("$Build_Number")
+                        dockerImage.push("latest")
+                    }
+                   }
+            }
+            }
+        }
     post {
         always {
             echo 'Slack Notification'
