@@ -16,7 +16,7 @@ pipeline {
 		NEXUS_PASS = 'saurav123'
 		RELEASE_REPO = 'vprofile-release'
 		CENTRAL_REPO = 'vpro-maven-central'
-		NEXUSIP = '172.31.29.214'
+		NEXUSIP = '172.31.23.85'
 		NEXUSPORT = '8081'
 		NEXUS_GRP_REPO = 'vpro-maven-group'
         NEXUS_LOGIN = 'nexuslogin'
@@ -25,6 +25,8 @@ pipeline {
         registryCredentials = 'ecr:us-east-1:awscreds'
         appRegistry = '195275651197.dkr.ecr.us-east-1.amazonaws.com/vprofileappimg'
         vprofileRegistry = "https://195275651197.dkr.ecr.us-east-1.amazonaws.com"
+        cluster = 'vprofile-staging-cluster'
+        service = 'vprofile-staging-service'
     }
 
     stages {
@@ -98,7 +100,7 @@ pipeline {
         stage('Docker Build app image'){
             steps {
                 script {
-                    dockerImage = sudo docker.build( appRegistry + ":$BUILD_NUMBER", "./Docker-files/app/multistage/") 
+                    dockerImage = docker.build(appRegistry + ":$Build_Number", "./Docker-files/app/multistage/") 
                 }
             }
         } 
@@ -106,11 +108,19 @@ pipeline {
             steps {
                 script {
                     docker.withRegistry(vprofileRegistry, registryCredentials) {
-                        dockerImage.push("$BUILD_NUMBER")
+                        dockerImage.push("$Build_Number")
                         dockerImage.push("latest")
                     }
                    }
             }
+            } 
+        stage('Deploy to AWS ECS Staging server'){
+            steps {
+                script {
+                    withAWS(region: 'us-east-1', credentials: 'awscreds') {
+                        sh "aws ecs update-service --cluster ${cluster} --service ${service} --force-new-deployment"
+                    }
+                }
             }
         }
     post {
@@ -121,4 +131,5 @@ pipeline {
                       message: "*${currentBuild.currentResult}:* Job ${env.JOB_NAME} build ${env.BUILD_NUMBER} \n More Info at: ${env.BUILD_URL}"
         }
     }
+}
 }
